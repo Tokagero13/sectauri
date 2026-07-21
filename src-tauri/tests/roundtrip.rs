@@ -74,3 +74,31 @@ fn create_on_disk_then_open_from_disk() {
 
     let _ = std::fs::remove_file(&p);
 }
+
+// Reproduces the "Unsupported database version" save failure and verifies the
+// KDBX 4.0 -> 4.1 upgrade fix used by save_vault.
+#[test]
+fn kdbx40_save_fails_but_41_succeeds() {
+    use keepass::config::DatabaseVersion;
+
+    let mut db = Database::new();
+    db.root_mut().add_entry().set_unprotected(fields::TITLE, "X");
+
+    // Simulate a vault opened as KDBX 4.0.
+    db.config.version = DatabaseVersion::KDB4(0);
+    let mut buf: Vec<u8> = Vec::new();
+    let err = db
+        .save(&mut buf, DatabaseKey::new().with_password("p"))
+        .unwrap_err();
+    eprintln!("4.0 save error (expected): {err}");
+
+    // The fix: upgrade to 4.1, which the writer supports.
+    db.config.version = DatabaseVersion::KDB4(1);
+    let mut buf2: Vec<u8> = Vec::new();
+    db.save(&mut buf2, DatabaseKey::new().with_password("p"))
+        .expect("4.1 save should succeed");
+
+    let mut reader = Cursor::new(&buf2);
+    Database::open(&mut reader, DatabaseKey::new().with_password("p"))
+        .expect("4.1 file should reopen");
+}

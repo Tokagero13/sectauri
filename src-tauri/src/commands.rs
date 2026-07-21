@@ -10,6 +10,7 @@ use std::sync::MutexGuard;
 
 use std::collections::HashSet;
 
+use keepass::config::DatabaseVersion;
 use keepass::db::{fields, EntryMut, Value};
 use keepass::error::DatabaseOpenError;
 use keepass::{Database, DatabaseKey};
@@ -289,23 +290,52 @@ pub fn delete_group(state: State<'_, AppState>, id: String) -> CmdResult<()> {
 
 #[tauri::command]
 pub fn save_vault(state: State<'_, AppState>) -> CmdResult<()> {
-    let guard = lock(&state)?;
-    let session = guard.as_ref().ok_or("no vault is open")?;
+    let mut guard = lock(&state)?;
+    let session = guard.as_mut().ok_or("no vault is open")?;
 
-    // Back up the existing file before overwriting via the experimental write path.
+    // The KDBX4 writer only supports minor version 1 (KDBX 4.1). A vault opened
+    // as 4.0 must be upgraded in memory, or save() returns "Unsupported version".
+    session.db.config.version = DatabaseVersion::KDB4(1);
+
+    // Write to a sibling temp file first, so a failed or corrupt write can never
+    // damage the original vault.
+    let mut tmp: OsString = session.path.clone().into_os_string();
+    tmp.push(".tmp");
+    let tmp = std::path::PathBuf::from(tmp);
+
+    {
+        let key = DatabaseKey::new().with_password(session.password.as_str());
+        let mut file = File::create(&tmp)
+            .map_err(|e| format!("cannot open vault for writing: {e}"))?;
+        if let Err(e) = session.db.save(&mut file, key) {
+            let _ = std::fs::remove_file(&tmp);
+            return Err(format!("failed to save vault: {e}"));
+        }
+    }
+
+    // Verify the freshly written file re-opens with the same password before it
+    // is allowed to replace the original.
+    {
+        let key = DatabaseKey::new().with_password(session.password.as_str());
+        let mut vf =
+            File::open(&tmp).map_err(|e| format!("cannot verify saved vault: {e}"))?;
+        if let Err(e) = Database::open(&mut vf, key) {
+            let _ = std::fs::remove_file(&tmp);
+            return Err(format!(
+                "save verification failed, original left untouched: {e}"
+            ));
+        }
+    }
+
+    // Back up the current file, then replace it with the verified temp file.
     if session.path.exists() {
         let mut backup: OsString = session.path.clone().into_os_string();
         backup.push(".bak");
         std::fs::copy(&session.path, backup)
             .map_err(|e| format!("failed to write backup: {e}"))?;
     }
-
-    let key = DatabaseKey::new().with_password(session.password.as_str());
-    let mut file = File::create(&session.path)
-        .map_err(|e| format!("cannot open vault for writing: {e}"))?;
-    session
-        .db
-        .save(&mut file, key)
-        .map_err(|e| format!("failed to save vault: {e}"))?;
+    std::fs::copy(&tmp, &session.path)
+        .map_err(|e| format!("failed to replace vault file: {e}"))?;
+    let _ = std::fs::remove_file(&tmp);
     Ok(())
 }
