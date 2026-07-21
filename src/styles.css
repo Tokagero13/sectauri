@@ -1,0 +1,432 @@
+:root {
+  --bg: #12141a;
+  --bg-2: #191c24;
+  --bg-3: #21252f;
+  --line: #2b303c;
+  --text: #e6e8ee;
+  --muted: #8b91a0;
+  --accent: #5b8def;
+  --accent-2: #4a7ad6;
+  --danger: #e0555f;
+  --danger-2: #c8434d;
+  --radius: 8px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  color: var(--text);
+  background: var(--bg-3);
+  transition: background 0.12s, border-color 0.12s;
+}
+button:hover:not(:disabled) {
+  background: #2a2f3b;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.primary {
+  background: var(--accent);
+  color: #fff;
+}
+button.primary:hover:not(:disabled) {
+  background: var(--accent-2);
+}
+button.secondary {
+  background: var(--bg-3);
+  border-color: var(--line);
+}
+button.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+button.ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-3);
+}
+button.danger {
+  background: var(--danger);
+  color: #fff;
+}
+button.danger:hover:not(:disabled) {
+  background: var(--danger-2);
+}
+button.icon {
+  padding: 6px 9px;
+  background: var(--bg-3);
+  border-color: var(--line);
+}
+
+input,
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 9px 11px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  outline: none;
+}
+input:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+textarea {
+  resize: vertical;
+}
+
+.error {
+  color: #ffd7d9;
+  background: rgba(224, 85, 95, 0.14);
+  border: 1px solid rgba(224, 85, 95, 0.4);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+}
+
+/* ---------- Unlock screen ---------- */
+.unlock {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(1200px 600px at 50% -10%, #1c2333 0%, var(--bg) 60%);
+}
+.unlock-card {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.brand {
+  margin: 0;
+  text-align: center;
+  font-size: 26px;
+  letter-spacing: 0.5px;
+}
+.subtitle {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--muted);
+}
+.full {
+  width: 100%;
+}
+.divider {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+/* ---------- Recent vaults ---------- */
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recent-label {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 2px 0;
+}
+.recent-item {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+.recent-open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.recent-item.active .recent-open {
+  border-color: var(--accent);
+  background: rgba(91, 141, 239, 0.12);
+}
+.recent-name {
+  font-weight: 500;
+}
+.recent-path {
+  color: var(--muted);
+  font-size: 11px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+.recent-forget {
+  flex: 0 0 auto;
+}
+
+/* ---------- Vault layout ---------- */
+.vault {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+}
+.app-name {
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.spacer {
+  flex: 1;
+}
+.banner {
+  margin: 8px 14px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+.dismiss {
+  opacity: 0.7;
+}
+
+.panes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px 300px 1fr;
+  min-height: 0;
+}
+.pane {
+  min-height: 0;
+  overflow-y: auto;
+}
+.sidebar {
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  padding: 8px 0;
+}
+.list {
+  border-right: 1px solid var(--line);
+  padding: 8px;
+}
+.detail {
+  padding: 20px 24px;
+}
+
+/* ---------- Group tree ---------- */
+.tree {
+  display: flex;
+  flex-direction: column;
+}
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  color: var(--text);
+}
+.tree-item:hover {
+  background: var(--bg-3);
+}
+.tree-item.active {
+  background: rgba(91, 141, 239, 0.16);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.tree-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tree-count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------- Entry list ---------- */
+.list-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.list-header-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+}
+.sort-btn {
+  padding: 5px 10px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.sort-btn.active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(91, 141, 239, 0.14);
+}
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.entry-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 9px 11px;
+}
+.entry-row:hover {
+  background: var(--bg-3);
+}
+.entry-row.active {
+  background: var(--bg-3);
+  border-color: var(--accent);
+}
+.entry-title {
+  font-weight: 500;
+}
+.entry-user {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------- Entry form ---------- */
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+}
+.entry-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.entry-form label input,
+.entry-form label textarea {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 14px;
+  color: var(--text);
+}
+.field-row {
+  display: flex;
+  gap: 6px;
+}
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+button.icon.small,
+button.secondary.small {
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+/* ---------- Custom fields ---------- */
+.custom-fields {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.section-title {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.custom-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.custom-key {
+  flex: 0 0 34%;
+}
+.custom-value {
+  flex: 1;
+}
+button.icon.on {
+  border-color: var(--accent);
+}
+
+.empty {
+  color: var(--muted);
+  padding: 20px;
+  text-align: center;
+}
