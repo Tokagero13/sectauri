@@ -229,6 +229,25 @@ pub fn delete_entry(state: State<'_, AppState>, id: String) -> CmdResult<()> {
 }
 
 #[tauri::command]
+pub fn move_entry(
+    state: State<'_, AppState>,
+    id: String,
+    target_group_id: String,
+) -> CmdResult<()> {
+    let entry_id = parse_entry_id(&id)?;
+    let group_id = parse_group_id(&target_group_id)?;
+    let mut guard = lock(&state)?;
+    let session = guard.as_mut().ok_or("no vault is open")?;
+    session
+        .db
+        .entry_mut(entry_id)
+        .ok_or("entry not found")?
+        .move_to(group_id)
+        .map_err(|e| format!("cannot move entry: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn create_group(
     state: State<'_, AppState>,
     parent_id: String,

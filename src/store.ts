@@ -22,6 +22,7 @@ interface VaultState {
   refreshTree: () => Promise<void>;
   selectGroup: (id: string | null) => void;
   selectEntry: (id: string | null) => void;
+  moveEntry: (entryId: string, targetGroupId: string) => Promise<void>;
   markDirty: () => void;
   save: () => Promise<void>;
   setError: (message: string | null) => void;
@@ -74,6 +75,15 @@ export const useVault = create<VaultState>((set) => ({
 
   selectGroup: (id) => set({ selectedGroupId: id, selectedEntryId: null }),
   selectEntry: (id) => set({ selectedEntryId: id }),
+
+  // Relocate an entry into another group, then refresh the cached tree so both
+  // the source and target group counts/lists reflect the move.
+  moveEntry: async (entryId, targetGroupId) => {
+    await api.moveEntry(entryId, targetGroupId);
+    const tree = await api.getTree();
+    set({ dirty: true, tree });
+  },
+
   markDirty: () => set({ dirty: true }),
 
   save: async () => {

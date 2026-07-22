@@ -19,6 +19,7 @@ pub fn run() {
             commands::create_entry,
             commands::update_entry,
             commands::delete_entry,
+            commands::move_entry,
             commands::create_group,
             commands::rename_group,
             commands::delete_group,

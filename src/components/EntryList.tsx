@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { GroupDto } from "../lib/api";
 import { useVault, type SortKey } from "../store";
+import { MoveMenu } from "./MoveMenu";
 
 function arrow(active: boolean, dir: "asc" | "desc") {
   if (!active) return "";
@@ -13,6 +14,10 @@ export function EntryList({ group }: { group: GroupDto }) {
   const sortKey = useVault((s) => s.sortKey);
   const sortDir = useVault((s) => s.sortDir);
   const setSort = useVault((s) => s.setSort);
+  const tree = useVault((s) => s.tree);
+  const moveEntry = useVault((s) => s.moveEntry);
+  const setError = useVault((s) => s.setError);
+  const [menu, setMenu] = useState<{ entryId: string; x: number; y: number } | null>(null);
 
   const entries = useMemo(() => {
     const factor = sortDir === "asc" ? 1 : -1;
@@ -51,6 +56,16 @@ export function EntryList({ group }: { group: GroupDto }) {
             <li key={entry.id}>
               <button
                 className={`entry-row${entry.id === selectedEntryId ? " active" : ""}`}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/entry-id", entry.id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  selectEntry(entry.id);
+                  setMenu({ entryId: entry.id, x: e.clientX, y: e.clientY });
+                }}
                 onClick={() => selectEntry(entry.id)}
               >
                 <span className="entry-title">{entry.title || "(no title)"}</span>
@@ -59,6 +74,22 @@ export function EntryList({ group }: { group: GroupDto }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {menu && tree && (
+        <MoveMenu
+          tree={tree}
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          onPick={async (groupId) => {
+            try {
+              await moveEntry(menu.entryId, groupId);
+            } catch (err) {
+              setError(String(err));
+            }
+          }}
+        />
       )}
     </>
   );

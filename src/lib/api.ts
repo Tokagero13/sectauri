@@ -61,6 +61,8 @@ export const api = {
   updateEntry: (id: string, input: EntryInput) =>
     invoke<void>("update_entry", { id, input }),
   deleteEntry: (id: string) => invoke<void>("delete_entry", { id }),
+  moveEntry: (id: string, targetGroupId: string) =>
+    invoke<void>("move_entry", { id, targetGroupId }),
   createGroup: (parentId: string, name: string) =>
     invoke<string>("create_group", { parentId, name }),
   renameGroup: (id: string, name: string) =>
