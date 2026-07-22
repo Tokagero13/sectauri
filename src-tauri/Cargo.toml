@@ -2,13 +2,11 @@
 name = "sectauri"
 version = "0.1.0"
 description = "Open and manage KeePass KDBX password vaults"
-authors = ["you"]
-edition = "2021"
+authors = ["Sabit Shangerey"]
+license = "MIT"
+edition = "2026"
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "sectauri_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 

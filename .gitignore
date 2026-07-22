@@ -28,6 +28,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# KeePass vaults — never commit real vault files
+*.kdbx
+
 # Test and coverage output
 coverage/
 *.lcov
