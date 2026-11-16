@@ -1,17 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type CustomField, type EntryInput } from "../lib/api";
 import { useVault } from "../store";
+import { confirmDanger, LayoutWarning } from "./common";
 
 type Standard = Omit<EntryInput, "custom">;
 const EMPTY: Standard = { title: "", username: "", password: "", url: "", notes: "" };
 
 export function EntryForm({ entryId }: { entryId: string }) {
-  const { markDirty, refreshTree, selectEntry, setError } = useVault();
+  const { markDirty, refreshTree, deleteEntry, setError, setPendingApply } = useVault();
+  const clearSeconds = useVault((s) => s.settings.clipboardClearSeconds);
   const [form, setForm] = useState<Standard>(EMPTY);
   const [custom, setCustom] = useState<CustomField[]>([]);
   const [reveal, setReveal] = useState(false);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
+  // What the backend holds, to tell unapplied edits (a draft) apart.
+  const [loaded, setLoaded] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -22,14 +26,17 @@ export function EntryForm({ entryId }: { entryId: string }) {
       .getEntry(entryId)
       .then((detail) => {
         if (!alive) return;
-        setForm({
+        const standard = {
           title: detail.title,
           username: detail.username,
           password: detail.password,
           url: detail.url,
           notes: detail.notes,
-        });
-        setCustom(detail.extra.map((f) => ({ ...f })));
+        };
+        const extra = detail.extra.map((f) => ({ ...f }));
+        setForm(standard);
+        setCustom(extra);
+        setLoaded(JSON.stringify({ form: standard, custom: extra }));
       })
       .catch((e) => setError(String(e)))
       .finally(() => alive && setLoading(false));
@@ -70,34 +77,47 @@ export function EntryForm({ entryId }: { entryId: string }) {
     });
   }
 
+  // Through the backend, so the clipboard is cleared after the configured time.
   async function copy(text: string) {
     try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      /* clipboard may be unavailable; ignore */
+      await api.copyText(text, clearSeconds);
+    } catch (e) {
+      setError(String(e));
     }
   }
 
-  async function saveEntry() {
+  const draft = JSON.stringify({ form, custom });
+  const hasDraft = !loading && draft !== loaded;
+
+  /** Applies the form to the vault in memory; `rethrow` lets idle auto-close stop on failure. */
+  async function saveEntry(rethrow = false) {
     const payload: EntryInput = {
       ...form,
       custom: custom.filter((f) => f.key.trim() !== ""),
     };
     try {
       await api.updateEntry(entryId, payload);
+      setLoaded(draft);
       markDirty();
       await refreshTree();
     } catch (e) {
       setError(String(e));
+      if (rethrow) throw e;
     }
   }
 
+  // Let idle auto-close (and the close prompt) know about unapplied edits.
+  const saveRef = useRef(saveEntry);
+  saveRef.current = saveEntry;
+  useEffect(() => {
+    setPendingApply(hasDraft ? () => saveRef.current(true) : null);
+  }, [hasDraft, setPendingApply]);
+  useEffect(() => () => setPendingApply(null), [setPendingApply]);
+
   async function removeEntry() {
+    if (!(await confirmDanger(`Delete entry “${form.title || "(no title)"}”?`, "Delete entry"))) return;
     try {
-      await api.deleteEntry(entryId);
-      selectEntry(null);
-      markDirty();
-      await refreshTree();
+      await deleteEntry(entryId);
     } catch (e) {
       setError(String(e));
     }
@@ -120,6 +140,7 @@ export function EntryForm({ entryId }: { entryId: string }) {
             ⧉
           </button>
         </div>
+        <LayoutWarning value={form.username} />
       </label>
 
       <label>
@@ -137,6 +158,7 @@ export function EntryForm({ entryId }: { entryId: string }) {
             ⧉
           </button>
         </div>
+        <LayoutWarning value={form.password} />
       </label>
 
       <label>
@@ -208,7 +230,7 @@ export function EntryForm({ entryId }: { entryId: string }) {
       </div>
 
       <div className="form-actions">
-        <button className="primary" onClick={saveEntry}>
+        <button className="primary" onClick={() => saveEntry()}>
           Apply changes
         </button>
         <button className="danger" onClick={removeEntry}>

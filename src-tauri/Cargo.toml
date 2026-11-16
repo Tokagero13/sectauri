@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Open and manage KeePass KDBX password vaults"
 authors = ["Sabit Shangerey"]
 license = "MIT"
-edition = "2026"
+edition = "2021"
 
 [lib]
 name = "sectauri_lib"
@@ -22,3 +22,18 @@ serde_json = "1"
 keepass = { version = "0.13", features = ["save_kdbx4"] }
 uuid = "1"
 zeroize = "1"
+argon2 = { version = "3", package = "rust-argon2" }
+totp-rs = { version = "6.0.0", features = ["otpauth", "qr", "gen_secret"] }
+arboard = "3.7.0"
+# Persistent OS credential store on every release platform (without a Linux backend, keyring
+# silently falls back to an in-memory mock).
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service", "crypto-rust"] }
+chrono = "0.4"
+getrandom = "0.2"
+
+# Key derivation is unusably slow unoptimized; keep `tauri dev` responsive.
+[profile.dev.package.rust-argon2]
+opt-level = 3
+
+[profile.dev.package.keepass]
+opt-level = 3
