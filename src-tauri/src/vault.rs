@@ -1,25 +1,40 @@
 //! keepass 0.13 integration: DTOs sent to the frontend and helpers that map
 //! the crate's tree types (`GroupRef`/`EntryRef`) into serializable data.
 
-use keepass::db::{fields, EntryId, EntryRef, GroupId, GroupRef};
+use keepass::db::{fields, CustomDataValue, EntryId, EntryRef, GroupId, GroupRef};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// Group colour lives in the group's KDBX custom data, so it travels with the vault
+/// (other KeePass clients ignore it).
+pub const COLOR_KEY: &str = "sectauri.color";
+
+/// The only colours a group may carry (the UI offers exactly these).
+pub const PALETTE: [&str; 10] = [
+    "#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#6366f1", "#a855f7",
+    "#ec4899", "#64748b",
+];
 
 /// A group node with its children — the shape the UI renders as a tree.
 #[derive(Serialize)]
 pub struct GroupDto {
     pub id: String,
     pub name: String,
+    pub color: Option<String>,
     pub groups: Vec<GroupDto>,
     pub entries: Vec<EntrySummaryDto>,
 }
 
-/// Lightweight entry row for the list view (no password).
+/// Lightweight entry row for the list and search (no password).
 #[derive(Serialize)]
 pub struct EntrySummaryDto {
     pub id: String,
     pub title: String,
     pub username: String,
+    pub url: String,
+    pub tags: Vec<String>,
+    /// Last modification, Unix seconds (UTC); `None` when the vault never recorded one.
+    pub modified: Option<i64>,
 }
 
 /// Full entry detail, including the (protected) password, for the edit form.
@@ -79,11 +94,19 @@ fn field(entry: &EntryRef<'_>, key: &str) -> String {
     entry.get(key).unwrap_or("").to_string()
 }
 
+fn group_color(group: &GroupRef<'_>) -> Option<String> {
+    match group.custom_data.get(COLOR_KEY)?.value.as_ref()? {
+        CustomDataValue::String(c) if PALETTE.contains(&c.as_str()) => Some(c.clone()),
+        _ => None,
+    }
+}
+
 /// Recursively convert a group subtree into a `GroupDto`.
 pub fn build_tree(group: GroupRef<'_>) -> GroupDto {
     GroupDto {
         id: group.id().uuid().to_string(),
         name: group.name.clone(),
+        color: group_color(&group),
         groups: group.groups().map(build_tree).collect(),
         entries: group
             .entries()
@@ -91,6 +114,9 @@ pub fn build_tree(group: GroupRef<'_>) -> GroupDto {
                 id: e.id().uuid().to_string(),
                 title: field(&e, fields::TITLE),
                 username: field(&e, fields::USERNAME),
+                url: field(&e, fields::URL),
+                tags: e.tags.clone(),
+                modified: e.times.last_modification.map(|t| t.and_utc().timestamp()),
             })
             .collect(),
     }

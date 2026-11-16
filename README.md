@@ -4,8 +4,12 @@ A desktop app for opening and managing **KeePass KDBX** password vaults, built w
 
 - Opens `.kdbx` vaults (KDBX 3.x / 4.x) with a master password
 - Browse groups and entries, view/copy fields
-- Create, edit and delete entries and groups
+- Create, edit and delete entries and groups (right-click menus, nested groups, drag and drop with a layout lock, 10 group colours)
+- Search all entries by title, username, URL or tags; one-click copy of username or password with clipboard auto-clear
+- Sort by title, username or last modified; recently used entries surface at the top of a group
 - Saves back to **KDBX 4** (a `.kdbx.bak` backup is written before every save)
+- App login: a Sectauri master password, optional TOTP second factor, and "remember this device for 7 days"
+- Dashboard of your vaults with a per-vault access log (time, result, device); open vaults close after 15 idle minutes (configurable)
 
 KDBX 4 is the modern KeePass format (Argon2 KDF, AES-256/ChaCha20, HMAC-SHA256), so vaults stay interoperable with KeePass, KeePassXC, KeePassium, etc.
 
@@ -14,6 +18,10 @@ KDBX 4 is the modern KeePass format (Argon2 KDF, AES-256/ChaCha20, HMAC-SHA256),
 - The decrypted database **never leaves the Rust backend**. The frontend only receives sanitized data via commands and never sees the raw key.
 - The master password is entered once on unlock, held in a `Zeroizing` buffer to re-save without re-prompting, and scrubbed from memory on lock.
 - Every save backs up the current file first, because KDBX4 writing in the underlying crate is still marked experimental.
+- New vaults use Argon2id (64 MiB, 10 passes, 4 lanes). Vaults made by earlier sectauri builds (the keepass crate default: Argon2d, 1 MiB x 50 passes) are strengthened to these settings on their next save. Opening and saving run off the UI thread, so the window never freezes during key derivation.
+- The Sectauri login lives in the OS credential store (Windows Credential Manager, macOS Keychain) under `com.tokagero.sectauri`: the master password as an Argon2id hash (`login`), the TOTP secret (`totp-secret`) and the 7-day device trust (`trusted-device-until`). Vault passwords are never stored. Forgot the master password? Delete those entries (Windows: `cmdkey /delete:login.com.tokagero.sectauri`, and the same for the other two); your vaults are not affected.
+- The master password can be changed in Settings; changing it also ends the 7-day device trust.
+- Every vault command checks the app login in the backend, not only in the UI. Copying a password happens in the backend, so the password does not pass through the page.
 
 ## Prerequisites
 
@@ -83,4 +91,4 @@ src-tauri/            Rust backend
 
 ## Roadmap (not in v1)
 
-Key-file / hardware-key unlock, auto-lock on idle, clipboard auto-clear, and TOTP field support.
+Key-file / hardware-key unlock, TOTP codes stored in entries, and changing the Sectauri master password.
