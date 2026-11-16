@@ -1,6 +1,6 @@
 [package]
 name = "sectauri"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open and manage KeePass KDBX password vaults"
 authors = ["Sabit Shangerey"]
 license = "MIT"
